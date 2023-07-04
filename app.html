@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<script defer type="text/javascript">
+			async function main() {
+				var getTabs = (element) => Number(element.dataset['tabs'] || 0);
+				var newHash = () => URL.createObjectURL(new Blob()).split('/').pop();
+				
+				const mainline = '.Paragraph, .OutlineElement, .BulletListStyle1, .BulletListStyle2, .BulletListStyle3';
+
+				const specials = {
+					markers: ['- ', '• ', '◦ '],
+					emptyline: '\n\n',
+				}
+
+				const hashes = {
+					tabs: newHash(),
+					formula: newHash()
+				}
+
+				const clipboardPermission = await navigator.permissions.query({name: 'clipboard-write'});
+				if (clipboardPermission.state !== 'granted') return;
+
+				async function getClipboard(type, index) {
+					let copiedItems = await navigator.clipboard.read();
+					let itemBlob = await copiedItems[index].getType(type);
+					let itemText = await itemBlob.text();
+					return itemText;
+				}
+				
+				let actionButton = document.querySelector('button:is(#action)');
+
+				actionButton.addEventListener('click', async() => {
+					let clipboard = await getClipboard('text/html', 0);
+
+					let container = document.createElement('section');
+					container.innerHTML = `<main>${clipboard}</main>`;
+					
+					let pseudoblocks = container.querySelectorAll('main > *');
+					let blocks = Array.from(pseudoblocks).filter((element) => element.textContent.trim());
+
+					for (let i = 0; i < blocks.length; i++) {
+						blocks[i].querySelectorAll('table').forEach((formula) => {
+							formula.innerHTML = hashes.formula;
+						});
+
+						blocks[i].querySelectorAll('p').forEach((paragraph) => {
+							if (paragraph.parentElement.localName === 'li') {
+								let list = paragraph.parentElement.parentElement;
+
+								if (list.className.includes('BulletListStyle3')) paragraph.insertAdjacentHTML('afterBegin', specials.markers[0]);
+								if (list.className.includes('BulletListStyle2')) paragraph.insertAdjacentHTML('afterBegin', specials.markers[2]);
+								if (list.className.includes('BulletListStyle1')) paragraph.insertAdjacentHTML('afterBegin', specials.markers[1]);
+							}
+						});
+
+						blocks[i].querySelectorAll('p, table').forEach((element) => {
+							let ascendent = element.parentElement;
+
+							while (ascendent) {
+								if (ascendent.style.margin === '0px 0px 0px 24px') element.dataset['tabs'] = getTabs(element) + 1;
+								ascendent = ascendent.parentElement;
+							}
+						})
+					}
+
+					let result = ''
+
+					blocks.forEach((block) => {
+						let text = Array.from(block.querySelectorAll('p, table')).reduce((accumulator, element) => {
+							return accumulator + hashes.tabs.repeat(getTabs(element)) + element.textContent + '\n';
+						}, '');
+
+						result += text.trim();
+						result += specials.emptyline;
+					});
+
+					result = result.split('\n').reduce((accumulator, line) => {
+						let tabsCount = line.match(new RegExp(hashes.tabs, 'g'))?.length || 0;
+
+						if (line.includes(hashes.formula)) {
+							line = [
+								hashes.tabs.repeat(tabsCount) + '<Fórmula>',
+								hashes.tabs.repeat(tabsCount + 1) + '<Simplificação>',
+								hashes.tabs.repeat(tabsCount + 2),
+								hashes.tabs.repeat(tabsCount + 1) + '</Simplificação>',
+								hashes.tabs.repeat(tabsCount + 1) + '<Explicação>',
+								hashes.tabs.repeat(tabsCount + 2),
+								hashes.tabs.repeat(tabsCount + 1) + '</Explicação>',
+								hashes.tabs.repeat(tabsCount) + "</Fórmula>"
+							].join('\n');
+						}
+
+						line = line.replaceAll(hashes.tabs, '\t');
+						line = line + '\n';
+						
+						return accumulator += line;
+					}, '');
+
+					result = result.trim();
+
+					console.log(result)
+				})
+			}
+
+			main()
+		</script>
+	</head>
+	<body>
+		<button id="action">Action</button>
+	</body>
+</html>
