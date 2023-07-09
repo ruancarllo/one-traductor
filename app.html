@@ -1,178 +1,178 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<script defer type="text/javascript">
-			async function main() {
-				var getTabs = (element) => Number(element.dataset['tabsCount'] || 0);
-				var newHash = () => URL.createObjectURL(new Blob()).split('/').pop();
+  <head>
+    <meta charset="utf-8">
+    <script defer type="text/javascript">
+      async function main() {
+        var getTabs = (element) => Number(element.dataset['tabsCount'] || 0);
+        var newHash = () => URL.createObjectURL(new Blob()).split('/').pop();
 
-				const mainline = '.Paragraph, .OutlineElement, .BulletListStyle1, .BulletListStyle2, .BulletListStyle3';
-				const decorated = '.Highlight, .NormalTextRun, .Underlined';
+        const mainline = '.Paragraph, .OutlineElement, .BulletListStyle1, .BulletListStyle2, .BulletListStyle3';
+        const decorated = '.Highlight, .NormalTextRun, .Underlined';
 
-				const masks = {
-					tabs: newHash(),
-					formula: newHash()
-				}
+        const masks = {
+          tabs: newHash(),
+          formula: newHash()
+        }
 
-				const clipboardPermission = await navigator.permissions.query({name: 'clipboard-write'});
-				if (clipboardPermission.state !== 'granted') return;
+        const clipboardPermission = await navigator.permissions.query({name: 'clipboard-write'});
+        if (clipboardPermission.state !== 'granted') return;
 
-				async function getClipboard(type, index) {
-					let copiedItems = await navigator.clipboard.read();
-					let itemBlob = await copiedItems[index].getType(type);
-					let itemText = await itemBlob.text();
-					return itemText;
-				}
-				
-				let actionButton = document.querySelector('button:is(#action)');
+        async function getClipboard(type, index) {
+          let copiedItems = await navigator.clipboard.read();
+          let itemBlob = await copiedItems[index].getType(type);
+          let itemText = await itemBlob.text();
+          return itemText;
+        }
+        
+        let actionButton = document.querySelector('button:is(#action)');
 
-				actionButton.addEventListener('click', async() => {
-					let clipboard = await getClipboard('text/html', 0);
+        actionButton.addEventListener('click', async() => {
+          let clipboard = await getClipboard('text/html', 0);
 
-					let container = document.createElement('section');
-					container.innerHTML = `<main>${clipboard}</main>`;
+          let container = document.createElement('section');
+          container.innerHTML = `<main>${clipboard}</main>`;
 
-					document.head.append(container);
-					
-					let pseudoblocks = container.querySelectorAll('main > *');
-					let blocks = Array.from(pseudoblocks).filter((element) => element.textContent.trim());
+          document.head.append(container);
+          
+          let pseudoblocks = container.querySelectorAll('main > *');
+          let blocks = Array.from(pseudoblocks).filter((element) => element.textContent.trim());
 
-					for (let i = 0; i < blocks.length; i++) {
-						blocks[i].querySelectorAll('table').forEach((formula) => {
-							formula.innerHTML = masks.formula;
-						});
+          for (let i = 0; i < blocks.length; i++) {
+            blocks[i].querySelectorAll('table').forEach((formula) => {
+              formula.innerHTML = masks.formula;
+            });
 
-						blocks[i].querySelectorAll('p').forEach((paragraph) => {
-							if (paragraph.parentElement.localName === 'li') {
-								let listClass = paragraph.parentElement.parentElement.className;
+            blocks[i].querySelectorAll('p').forEach((paragraph) => {
+              if (paragraph.parentElement.localName === 'li') {
+                let listClass = paragraph.parentElement.parentElement.className;
 
-								if (listClass.includes('BulletListStyle3')) paragraph.insertAdjacentHTML('afterBegin', '- ');
-								if (listClass.includes('BulletListStyle2')) paragraph.insertAdjacentHTML('afterBegin', '◦ ');
-								if (listClass.includes('BulletListStyle1')) paragraph.insertAdjacentHTML('afterBegin', '• ');
-							}
-						});
+                if (listClass.includes('BulletListStyle3')) paragraph.insertAdjacentHTML('afterBegin', '- ');
+                if (listClass.includes('BulletListStyle2')) paragraph.insertAdjacentHTML('afterBegin', '◦ ');
+                if (listClass.includes('BulletListStyle1')) paragraph.insertAdjacentHTML('afterBegin', '• ');
+              }
+            });
 
-						blocks[i].querySelectorAll('p, table').forEach((element) => {
-							let ascendent = element.parentElement;
+            blocks[i].querySelectorAll('p, table').forEach((element) => {
+              let ascendent = element.parentElement;
 
-							while (ascendent) {
-								if (ascendent.style.margin === '0px 0px 0px 24px') element.dataset['tabsCount'] = getTabs(element) + 1;
-								ascendent = ascendent.parentElement;
-							}
-						});
+              while (ascendent) {
+                if (ascendent.style.margin === '0px 0px 0px 24px') element.dataset['tabsCount'] = getTabs(element) + 1;
+                ascendent = ascendent.parentElement;
+              }
+            });
 
-						blocks[i].querySelectorAll(decorated).forEach((particle) => {
-							if (particle.querySelector('.Highlight')) return;
+            blocks[i].querySelectorAll(decorated).forEach((particle) => {
+              if (particle.querySelector('.Highlight')) return;
 
-							let text = particle.textContent.trim();
+              let text = particle.textContent.trim();
 
-							let { backgroundColor, color, fontWeight, fontStyle } = getComputedStyle(particle);
+              let { backgroundColor, color, fontWeight, fontStyle } = getComputedStyle(particle);
 
-							if (text) {
-								if (fontStyle === 'italic') particle.textContent = `🍕${text}🍕`;
-								if (color === 'rgb(255, 0, 0)') particle.textContent = `🛇${text}🛇`;
-								if (color === 'rgb(127, 127, 127)') particle.textContent = `⚒${text}⚒`;
-								if (particle.className.includes('Underlined')) particle.textContent = `🔘${text}🔘`;
+              if (text) {
+                if (fontStyle === 'italic') particle.textContent = `🍕${text}🍕`;
+                if (color === 'rgb(255, 0, 0)') particle.textContent = `🛇${text}🛇`;
+                if (color === 'rgb(127, 127, 127)') particle.textContent = `⚒${text}⚒`;
+                if (particle.className.includes('Underlined')) particle.textContent = `🔘${text}🔘`;
 
-								if (backgroundColor === 'rgb(0, 0, 128)' && color === 'rgb(255, 255, 255)') particle.textContent = `🟪[${text}]`;
-								if (backgroundColor === 'rgb(0, 0, 255)' && color === 'rgb(255, 255, 255)') particle.textContent = `[${text}]🟪`;
+                if (backgroundColor === 'rgb(0, 0, 128)' && color === 'rgb(255, 255, 255)') particle.textContent = `🟪[${text}]`;
+                if (backgroundColor === 'rgb(0, 0, 255)' && color === 'rgb(255, 255, 255)') particle.textContent = `[${text}]🟪`;
 
-								if (backgroundColor === 'rgb(0, 255, 255)' && color === 'rgb(0, 0, 0)') {
-									if (fontWeight === '700') particle.textContent = `🟦${text}🟦`;
-									if (fontWeight === '400') particle.textContent = `🟦✎${text}✎🟦`;
-								}
+                if (backgroundColor === 'rgb(0, 255, 255)' && color === 'rgb(0, 0, 0)') {
+                  if (fontWeight === '700') particle.textContent = `🟦${text}🟦`;
+                  if (fontWeight === '400') particle.textContent = `🟦✎${text}✎🟦`;
+                }
 
-								if (backgroundColor === 'rgb(128, 128, 128)' && color === 'rgb(255, 255, 255)') {
-									if (fontWeight === '700') particle.textContent = `🟧${text}🟧`;
-									if (fontWeight === '400') particle.textContent = `🟧✎${text}✎🟧`;
-								}
+                if (backgroundColor === 'rgb(128, 128, 128)' && color === 'rgb(255, 255, 255)') {
+                  if (fontWeight === '700') particle.textContent = `🟧${text}🟧`;
+                  if (fontWeight === '400') particle.textContent = `🟧✎${text}✎🟧`;
+                }
 
-								if (backgroundColor === 'rgb(192, 192, 192)' && color === 'rgb(0, 0, 0)') {
-									if (fontWeight === '700') particle.textContent = `🟫${text}🟫`;
+                if (backgroundColor === 'rgb(192, 192, 192)' && color === 'rgb(0, 0, 0)') {
+                  if (fontWeight === '700') particle.textContent = `🟫${text}🟫`;
 
-									if (fontWeight === '400') particle.textContent = `⬜${text}⬜`;
-								}
+                  if (fontWeight === '400') particle.textContent = `⬜${text}⬜`;
+                }
 
-								if (backgroundColor === 'rgb(255, 255, 0)') {
-									if (fontWeight === '700') particle.textContent = `🟨${text}🟨`;
-									if (fontWeight === '400') particle.textContent = `🟡${text}🟡`;
-								}
-							}
-						});
-					}
+                if (backgroundColor === 'rgb(255, 255, 0)') {
+                  if (fontWeight === '700') particle.textContent = `🟨${text}🟨`;
+                  if (fontWeight === '400') particle.textContent = `🟡${text}🟡`;
+                }
+              }
+            });
+          }
 
-					container.remove();
+          container.remove();
 
-					let result = '';
+          let result = '';
 
-					blocks.forEach((block) => {
-						let text = Array.from(block.querySelectorAll('p, table')).reduce((accumulator, element) => {
-							return accumulator + masks.tabs.repeat(getTabs(element)) + element.textContent + '\n';
-						}, '');
+          blocks.forEach((block) => {
+            let text = Array.from(block.querySelectorAll('p, table')).reduce((accumulator, element) => {
+              return accumulator + masks.tabs.repeat(getTabs(element)) + element.textContent + '\n';
+            }, '');
 
-						result += text.trim();
-						result += '\n\n';
-					});
+            result += text.trim();
+            result += '\n\n';
+          });
 
-					result = result.split('\n').reduce((accumulator, line) => {
-						let tabsCount = line.match(new RegExp(masks.tabs, 'g'))?.length || 0;
+          result = result.split('\n').reduce((accumulator, line) => {
+            let tabsCount = line.match(new RegExp(masks.tabs, 'g'))?.length || 0;
 
-						if (line.includes(masks.formula)) {
-							line = [
-								masks.tabs.repeat(tabsCount + 0) + '<Fórmula>',
-								masks.tabs.repeat(tabsCount + 1) + '<Simplificação>',
-								masks.tabs.repeat(tabsCount + 2) + '',
-								masks.tabs.repeat(tabsCount + 1) + '</Simplificação>',
-								masks.tabs.repeat(tabsCount + 1) + '<Explicação>',
-								masks.tabs.repeat(tabsCount + 2) + '',
-								masks.tabs.repeat(tabsCount + 1) + '</Explicação>',
-								masks.tabs.repeat(tabsCount + 0) + "</Fórmula>"
-							].join('\n');
-						}
+            if (line.includes(masks.formula)) {
+              line = [
+                masks.tabs.repeat(tabsCount + 0) + '<Fórmula>',
+                masks.tabs.repeat(tabsCount + 1) + '<Simplificação>',
+                masks.tabs.repeat(tabsCount + 2) + '',
+                masks.tabs.repeat(tabsCount + 1) + '</Simplificação>',
+                masks.tabs.repeat(tabsCount + 1) + '<Explicação>',
+                masks.tabs.repeat(tabsCount + 2) + '',
+                masks.tabs.repeat(tabsCount + 1) + '</Explicação>',
+                masks.tabs.repeat(tabsCount + 0) + "</Fórmula>"
+              ].join('\n');
+            }
 
-						line = line.replaceAll(masks.tabs, '\t');
-						line += '\n';
-						
-						return accumulator + line;
-					}, '');
+            line = line.replaceAll(masks.tabs, '\t');
+            line += '\n';
+            
+            return accumulator + line;
+          }, '');
 
-					let chars = [...result];
-					
-					for (let i = 0; i < chars.length; i++) {
-						if (chars[i].match(/🟦|🟧/) && chars[i + 1].match(/🟦|🟧/) && chars[i + 2].match(/✎/)) {
-							chars[i] = '';
-							chars[i + 1] = '\u00A0';
-						}
+          let chars = [...result];
+          
+          for (let i = 0; i < chars.length; i++) {
+            if (chars[i].match(/🟦|🟧/) && chars[i + 1].match(/🟦|🟧/) && chars[i + 2].match(/✎/)) {
+              chars[i] = '';
+              chars[i + 1] = '\u00A0';
+            }
 
-						if (chars[i].match(/🟫/) && chars[i + 1].match(/⬜/)) {
-							chars[i] = '\u00A0';
-							chars[i + 1] = '✎';
+            if (chars[i].match(/🟫/) && chars[i + 1].match(/⬜/)) {
+              chars[i] = '\u00A0';
+              chars[i + 1] = '✎';
 
-							for (let j = i; j < chars.length; j++) {
-								if (chars[j].match(/⬜/)) {
-									chars[j] = '✎🟫';
-									break;
-								};
-							}
-						}
+              for (let j = i; j < chars.length; j++) {
+                if (chars[j].match(/⬜/)) {
+                  chars[j] = '✎🟫';
+                  break;
+                };
+              }
+            }
 
-						if (chars[i].match(/\u00A0/) && chars[i + 1].match(/\u00A0|:|\./)) {
-							chars[i] = '';
-						}
-					}
+            if (chars[i].match(/\u00A0/) && chars[i + 1].match(/\u00A0|:|\./)) {
+              chars[i] = '';
+            }
+          }
 
-					result = chars.join('').trim();
+          result = chars.join('').trim();
 
-					navigator.clipboard.writeText(result);
-					console.log(result);
-				});
-			}
+          navigator.clipboard.writeText(result);
+          console.log(result);
+        });
+      }
 
-			main()
-		</script>
-	</head>
-	<body>
-		<button id="action">Action</button>
-	</body>
+      main()
+    </script>
+  </head>
+  <body>
+    <button id="action">Action</button>
+  </body>
 </html>
