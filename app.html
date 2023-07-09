@@ -104,18 +104,18 @@
 
 					container.remove();
 
-					let pseudoresult = '';
+					let result = '';
 
 					blocks.forEach((block) => {
 						let text = Array.from(block.querySelectorAll('p, table')).reduce((accumulator, element) => {
 							return accumulator + masks.tabs.repeat(getTabs(element)) + element.textContent + '\n';
 						}, '');
 
-						pseudoresult += text.trim();
-						pseudoresult += '\n\n';
+						result += text.trim();
+						result += '\n\n';
 					});
 
-					pseudoresult = pseudoresult.split('\n').reduce((accumulator, line) => {
+					result = result.split('\n').reduce((accumulator, line) => {
 						let tabsCount = line.match(new RegExp(masks.tabs, 'g'))?.length || 0;
 
 						if (line.includes(masks.formula)) {
@@ -137,7 +137,7 @@
 						return accumulator + line;
 					}, '');
 
-					let chars = [...pseudoresult];
+					let chars = [...result];
 					
 					for (let i = 0; i < chars.length; i++) {
 						if (chars[i].match(/🟦|🟧/) && chars[i + 1].match(/🟦|🟧/) && chars[i + 2].match(/✎/)) {
@@ -162,7 +162,7 @@
 						}
 					}
 
-					let result = chars.join('').trim();
+					result = chars.join('').trim();
 
 					navigator.clipboard.writeText(result);
 					console.log(result);
