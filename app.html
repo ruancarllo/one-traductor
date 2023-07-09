@@ -5,7 +5,14 @@
     <script defer type="text/javascript">
       async function main() {
         var getTabs = (element) => Number(element.dataset['tabsCount'] || 0);
+
         var newHash = () => URL.createObjectURL(new Blob()).split('/').pop();
+
+        var toHex = (rgb) => {
+          if ((rgb.match(/\d+/g) || []).length !== 3) return;
+          let [r, g, b] = rgb.match(/\d+/g).map((item) => Number(item));
+          return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
 
         const mainline = '.Paragraph, .OutlineElement, .BulletListStyle1, .BulletListStyle2, .BulletListStyle3';
         const decorated = '.Highlight, .NormalTextRun, .Underlined';
@@ -66,37 +73,40 @@
               if (particle.querySelector('.Highlight')) return;
 
               let text = particle.textContent.trim();
-
-              let { backgroundColor, color, fontWeight, fontStyle } = getComputedStyle(particle);
+              let styles = getComputedStyle(particle);
+              
+              let backgroundColor = toHex(styles.backgroundColor);
+              let color = toHex(styles.color);
+              let fontStyle = styles.fontStyle;
+              let fontWeight = Number(styles.fontWeight);
 
               if (text) {
                 if (fontStyle === 'italic') particle.textContent = `🍕${text}🍕`;
-                if (color === 'rgb(255, 0, 0)') particle.textContent = `🛇${text}🛇`;
-                if (color === 'rgb(127, 127, 127)') particle.textContent = `⚒${text}⚒`;
+                if (color === '#ff0000') particle.textContent = `🛇${text}🛇`;
+                if (color === '#7f7f7f') particle.textContent = `⚒${text}⚒`;
                 if (particle.className.includes('Underlined')) particle.textContent = `🔘${text}🔘`;
 
-                if (backgroundColor === 'rgb(0, 0, 128)' && color === 'rgb(255, 255, 255)') particle.textContent = `🟪[${text}]`;
-                if (backgroundColor === 'rgb(0, 0, 255)' && color === 'rgb(255, 255, 255)') particle.textContent = `[${text}]🟪`;
+                if (backgroundColor === '#000080' && color === '#ffffff') particle.textContent = `🟪[${text}]`;
+                if (backgroundColor === '#0000ff' && color === '#ffffff') particle.textContent = `[${text}]🟪`;
 
-                if (backgroundColor === 'rgb(0, 255, 255)' && color === 'rgb(0, 0, 0)') {
-                  if (fontWeight === '700') particle.textContent = `🟦${text}🟦`;
-                  if (fontWeight === '400') particle.textContent = `🟦✎${text}✎🟦`;
+                if (backgroundColor === '#00ffff' && color === '#000000') {
+                  if (fontWeight === 700) particle.textContent = `🟦${text}🟦`;
+                  if (fontWeight === 400) particle.textContent = `🟦✎${text}✎🟦`;
                 }
 
-                if (backgroundColor === 'rgb(128, 128, 128)' && color === 'rgb(255, 255, 255)') {
-                  if (fontWeight === '700') particle.textContent = `🟧${text}🟧`;
-                  if (fontWeight === '400') particle.textContent = `🟧✎${text}✎🟧`;
+                if (backgroundColor === '#808080' && color === '#ffffff') {
+                  if (fontWeight === 700) particle.textContent = `🟧${text}🟧`;
+                  if (fontWeight === 400) particle.textContent = `🟧✎${text}✎🟧`;
                 }
 
-                if (backgroundColor === 'rgb(192, 192, 192)' && color === 'rgb(0, 0, 0)') {
-                  if (fontWeight === '700') particle.textContent = `🟫${text}🟫`;
-
-                  if (fontWeight === '400') particle.textContent = `⬜${text}⬜`;
+                if (backgroundColor === '#c0c0c0' && color === '#000000') {
+                  if (fontWeight === 700) particle.textContent = `🟫${text}🟫`;
+                  if (fontWeight === 400) particle.textContent = `⬜${text}⬜`;
                 }
 
-                if (backgroundColor === 'rgb(255, 255, 0)') {
-                  if (fontWeight === '700') particle.textContent = `🟨${text}🟨`;
-                  if (fontWeight === '400') particle.textContent = `🟡${text}🟡`;
+                if (backgroundColor === '#ffff00') {
+                  if (fontWeight === 700) particle.textContent = `🟨${text}🟨`;
+                  if (fontWeight === 400) particle.textContent = `🟡${text}🟡`;
                 }
               }
             });
