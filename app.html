@@ -4,17 +4,13 @@
 		<meta charset="utf-8">
 		<script defer type="text/javascript">
 			async function main() {
-				var getTabs = (element) => Number(element.dataset['tabs'] || 0);
+				var getTabs = (element) => Number(element.dataset['tabsCount'] || 0);
 				var newHash = () => URL.createObjectURL(new Blob()).split('/').pop();
-				
+
 				const mainline = '.Paragraph, .OutlineElement, .BulletListStyle1, .BulletListStyle2, .BulletListStyle3';
+				const decorated = '.Highlight, .NormalTextRun, .Underlined';
 
-				const specials = {
-					markers: ['- ', '• ', '◦ '],
-					emptyline: '\n\n',
-				}
-
-				const hashes = {
+				const masks = {
 					tabs: newHash(),
 					formula: newHash()
 				}
@@ -36,22 +32,24 @@
 
 					let container = document.createElement('section');
 					container.innerHTML = `<main>${clipboard}</main>`;
+
+					document.head.append(container);
 					
 					let pseudoblocks = container.querySelectorAll('main > *');
 					let blocks = Array.from(pseudoblocks).filter((element) => element.textContent.trim());
 
 					for (let i = 0; i < blocks.length; i++) {
 						blocks[i].querySelectorAll('table').forEach((formula) => {
-							formula.innerHTML = hashes.formula;
+							formula.innerHTML = masks.formula;
 						});
 
 						blocks[i].querySelectorAll('p').forEach((paragraph) => {
 							if (paragraph.parentElement.localName === 'li') {
-								let list = paragraph.parentElement.parentElement;
+								let listClass = paragraph.parentElement.parentElement.className;
 
-								if (list.className.includes('BulletListStyle3')) paragraph.insertAdjacentHTML('afterBegin', specials.markers[0]);
-								if (list.className.includes('BulletListStyle2')) paragraph.insertAdjacentHTML('afterBegin', specials.markers[2]);
-								if (list.className.includes('BulletListStyle1')) paragraph.insertAdjacentHTML('afterBegin', specials.markers[1]);
+								if (listClass.includes('BulletListStyle3')) paragraph.insertAdjacentHTML('afterBegin', '- ');
+								if (listClass.includes('BulletListStyle2')) paragraph.insertAdjacentHTML('afterBegin', '◦ ');
+								if (listClass.includes('BulletListStyle1')) paragraph.insertAdjacentHTML('afterBegin', '• ');
 							}
 						});
 
@@ -59,49 +57,116 @@
 							let ascendent = element.parentElement;
 
 							while (ascendent) {
-								if (ascendent.style.margin === '0px 0px 0px 24px') element.dataset['tabs'] = getTabs(element) + 1;
+								if (ascendent.style.margin === '0px 0px 0px 24px') element.dataset['tabsCount'] = getTabs(element) + 1;
 								ascendent = ascendent.parentElement;
 							}
-						})
+						});
+
+						blocks[i].querySelectorAll(decorated).forEach((particle) => {
+							if (particle.querySelector('.Highlight')) return;
+
+							let text = particle.textContent.trim();
+
+							let { backgroundColor, color, fontWeight, fontStyle } = getComputedStyle(particle);
+
+							if (text) {
+								if (fontStyle === 'italic') particle.textContent = `🍕${text}🍕`;
+								if (color === 'rgb(255, 0, 0)') particle.textContent = `🛇${text}🛇`;
+								if (color === 'rgb(127, 127, 127)') particle.textContent = `⚒${text}⚒`;
+								if (particle.className.includes('Underlined')) particle.textContent = `🔘${text}🔘`;
+
+								if (backgroundColor === 'rgb(0, 0, 128)' && color === 'rgb(255, 255, 255)') particle.textContent = `🟪[${text}]`;
+								if (backgroundColor === 'rgb(0, 0, 255)' && color === 'rgb(255, 255, 255)') particle.textContent = `[${text}]🟪`;
+
+								if (backgroundColor === 'rgb(0, 255, 255)' && color === 'rgb(0, 0, 0)') {
+									if (fontWeight === '700') particle.textContent = `🟦${text}🟦`;
+									if (fontWeight === '400') particle.textContent = `🟦✎${text}✎🟦`;
+								}
+
+								if (backgroundColor === 'rgb(128, 128, 128)' && color === 'rgb(255, 255, 255)') {
+									if (fontWeight === '700') particle.textContent = `🟧${text}🟧`;
+									if (fontWeight === '400') particle.textContent = `🟧✎${text}✎🟧`;
+								}
+
+								if (backgroundColor === 'rgb(192, 192, 192)' && color === 'rgb(0, 0, 0)') {
+									if (fontWeight === '700') particle.textContent = `🟫${text}🟫`;
+
+									if (fontWeight === '400') particle.textContent = `⬜${text}⬜`;
+								}
+
+								if (backgroundColor === 'rgb(255, 255, 0)') {
+									if (fontWeight === '700') particle.textContent = `🟨${text}🟨`;
+									if (fontWeight === '400') particle.textContent = `🟡${text}🟡`;
+								}
+							}
+						});
 					}
 
-					let result = ''
+					container.remove();
+
+					let pseudoresult = '';
 
 					blocks.forEach((block) => {
 						let text = Array.from(block.querySelectorAll('p, table')).reduce((accumulator, element) => {
-							return accumulator + hashes.tabs.repeat(getTabs(element)) + element.textContent + '\n';
+							return accumulator + masks.tabs.repeat(getTabs(element)) + element.textContent + '\n';
 						}, '');
 
-						result += text.trim();
-						result += specials.emptyline;
+						pseudoresult += text.trim();
+						pseudoresult += '\n\n';
 					});
 
-					result = result.split('\n').reduce((accumulator, line) => {
-						let tabsCount = line.match(new RegExp(hashes.tabs, 'g'))?.length || 0;
+					pseudoresult = pseudoresult.split('\n').reduce((accumulator, line) => {
+						let tabsCount = line.match(new RegExp(masks.tabs, 'g'))?.length || 0;
 
-						if (line.includes(hashes.formula)) {
+						if (line.includes(masks.formula)) {
 							line = [
-								hashes.tabs.repeat(tabsCount) + '<Fórmula>',
-								hashes.tabs.repeat(tabsCount + 1) + '<Simplificação>',
-								hashes.tabs.repeat(tabsCount + 2),
-								hashes.tabs.repeat(tabsCount + 1) + '</Simplificação>',
-								hashes.tabs.repeat(tabsCount + 1) + '<Explicação>',
-								hashes.tabs.repeat(tabsCount + 2),
-								hashes.tabs.repeat(tabsCount + 1) + '</Explicação>',
-								hashes.tabs.repeat(tabsCount) + "</Fórmula>"
+								masks.tabs.repeat(tabsCount + 0) + '<Fórmula>',
+								masks.tabs.repeat(tabsCount + 1) + '<Simplificação>',
+								masks.tabs.repeat(tabsCount + 2) + '',
+								masks.tabs.repeat(tabsCount + 1) + '</Simplificação>',
+								masks.tabs.repeat(tabsCount + 1) + '<Explicação>',
+								masks.tabs.repeat(tabsCount + 2) + '',
+								masks.tabs.repeat(tabsCount + 1) + '</Explicação>',
+								masks.tabs.repeat(tabsCount + 0) + "</Fórmula>"
 							].join('\n');
 						}
 
-						line = line.replaceAll(hashes.tabs, '\t');
-						line = line + '\n';
+						line = line.replaceAll(masks.tabs, '\t');
+						line += '\n';
 						
-						return accumulator += line;
+						return accumulator + line;
 					}, '');
 
-					result = result.trim();
+					let chars = [...pseudoresult];
+					
+					for (let i = 0; i < chars.length; i++) {
+						if (chars[i].match(/🟦|🟧/) && chars[i + 1].match(/🟦|🟧/) && chars[i + 2].match(/✎/)) {
+							chars[i] = '';
+							chars[i + 1] = '\u00A0';
+						}
 
-					console.log(result)
-				})
+						if (chars[i].match(/🟫/) && chars[i + 1].match(/⬜/)) {
+							chars[i] = '\u00A0';
+							chars[i + 1] = '✎';
+
+							for (let j = i; j < chars.length; j++) {
+								if (chars[j].match(/⬜/)) {
+									chars[j] = '✎🟫';
+									break;
+								};
+							}
+						}
+
+						if (chars[i].match(/\u00A0/) && chars[i + 1].match(/\u00A0|:|\./)) {
+							chars[i] = '';
+						}
+					}
+
+					let result = chars.join('').trim();
+
+					navigator.clipboard.writeText(result);
+					console.log(result);
+				});
 			}
 
 			main()
